@@ -1,9 +1,9 @@
+#include "platform.h"
+
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
-
-#include "train.h"
 
 using std::string;
 using std::vector;

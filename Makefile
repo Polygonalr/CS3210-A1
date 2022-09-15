@@ -6,7 +6,7 @@ DEBUGFLAGS:=-g
 .PHONY: all clean
 all: submission
 
-submission: main.o train.o
+submission: main.o train.o platform.o
 	$(CXX) $(CXXFLAGS) $(RELEASEFLAGS) -o troons $^
 
 main.o: main.cc
@@ -14,6 +14,9 @@ main.o: main.cc
 
 train.o: train.cc
 	$(CXX) $(CXXFLAGS) $(RELEASEFLAGS) -c train.cc
+
+platform.o: platform.cc
+	$(CXX) $(CXXFLAGS) $(RELEASEFLAGS) -c platform.cc
 
 clean:
 	$(RM) *.o troons
