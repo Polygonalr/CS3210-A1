@@ -1,4 +1,4 @@
-#include "train.h"
+#include "link.h"
 
 #include <string>
 #include <vector>
@@ -24,10 +24,13 @@ struct TrainCompare {
 class Platform {
 public:
     int id;
+    int popularity;
     string platform_name;
     priority_queue<TrainTickPair, vector<TrainTickPair>, TrainCompare> holding_area;
+    Link *link; // destination platform is specified in here
 
-    Platform(int id, string& platform_name);
+    Platform(int id, int popularity, string& platform_name, Link *link);
 
     void queue(Train &train, int entry_tick);
+    void goto_next_tick();
 };
