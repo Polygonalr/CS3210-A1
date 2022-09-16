@@ -56,7 +56,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     // ======== Initialise starting platform of green line ========
     Station starting_station = stations[green_line[0]];
     Platform *first_platform = new Platform(starting_station.popularity, NULL);
-    starting_station.platforms->push_back(*first_platform);
+    starting_station.platforms->push_back(first_platform);
 
     Platform *previous_platform = first_platform, *current_platform;
 
@@ -73,7 +73,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         previous_platform->link = &forward_link;
 
         // Finally, add the platform to the current station
-        current_station.platforms->push_back(*current_platform);
+        current_station.platforms->push_back(current_platform);
         previous_platform = current_platform;
     }
 
@@ -90,7 +90,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         previous_platform->link = &backward_link;
 
         // Finally, add the platform to the current station
-        current_station.platforms->push_back(*current_platform);
+        current_station.platforms->push_back(current_platform);
         previous_platform = current_platform;
     }
 
@@ -101,7 +101,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     // ======== Initialise starting platform of blue line ========
     starting_station = stations[blue_line[0]];
     first_platform = new Platform(starting_station.popularity, NULL);
-    starting_station.platforms->push_back(*first_platform);
+    starting_station.platforms->push_back(first_platform);
 
     previous_platform = first_platform;
 
@@ -118,7 +118,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         previous_platform->link = &forward_link;
 
         // Finally, add the platform to the current station
-        current_station.platforms->push_back(*current_platform);
+        current_station.platforms->push_back(current_platform);
         previous_platform = current_platform;
     }
 
@@ -135,7 +135,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         previous_platform->link = &backward_link;
 
         // Finally, add the platform to the current station
-        current_station.platforms->push_back(*current_platform);
+        current_station.platforms->push_back(current_platform);
         previous_platform = current_platform;
     }
 
@@ -146,7 +146,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     // ======== Initialise starting platform of yellow line ========
     starting_station = stations[yellow_line[0]];
     first_platform = new Platform(starting_station.popularity, NULL);
-    starting_station.platforms->push_back(*first_platform);
+    starting_station.platforms->push_back(first_platform);
 
     previous_platform = first_platform;
 
@@ -163,7 +163,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         previous_platform->link = &forward_link;
 
         // Finally, add the platform to the current station
-        current_station.platforms->push_back(*current_platform);
+        current_station.platforms->push_back(current_platform);
         previous_platform = current_platform;
     }
 
@@ -180,7 +180,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         previous_platform->link = &backward_link;
 
         // Finally, add the platform to the current station
-        current_station.platforms->push_back(*current_platform);
+        current_station.platforms->push_back(current_platform);
         previous_platform = current_platform;
     }
 
@@ -224,6 +224,14 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     std::cout << num_blue_trains << '\n';
 
     std::cout << num_lines << '\n';
+
+    // ======== Clean up code ========
+    for (unsigned long int i = 0; i < num_stations; i++) {
+        for (unsigned long int j = 0; j < stations[i].platforms->size(); j++) {
+            delete stations[i].platforms->at(j);
+        }
+        delete stations[i].platforms;
+    }
 }
 
 vector<string> extract_station_names(string& line) {

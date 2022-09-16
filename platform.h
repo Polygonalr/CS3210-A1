@@ -38,7 +38,7 @@ public:
     int id;
     int popularity;
     string station_name;
-    vector<Platform>* platforms;
+    vector<Platform*>* platforms;
 
     Station(int id, int popularity, string& station_name);
     void goto_next_tick();
