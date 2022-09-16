@@ -18,10 +18,8 @@ bool TrainCompare::operator()(const TrainTickPair& left_pair, const TrainTickPai
     }
 }
 
-Platform::Platform(int id, int popularity, string& platform_name, Link *link) {
-    this->id = id;
+Platform::Platform(int popularity, Link* link) {
     this->popularity = popularity;
-    this->platform_name = platform_name;
     this->link = link;
 }
 
@@ -34,6 +32,13 @@ void Platform::goto_next_tick() {
     if (!holding_area.empty()) {
         TrainTickPair ttp = holding_area.top();
         holding_area.pop();
-        link->occupy(&ttp.train);
+        link->occupy(&(ttp.train));
     }
+}
+
+Station::Station(int id, int popularity, string& station_name) {
+    this->id = id;
+    this->popularity = popularity;
+    this->station_name = station_name;
+    this->platforms = new vector<Platform>;
 }

@@ -23,14 +23,23 @@ struct TrainCompare {
 
 class Platform {
 public:
+    int popularity;
+    priority_queue<TrainTickPair, vector<TrainTickPair>, TrainCompare> holding_area;
+    Link* link; // destination platform is specified in here
+
+    Platform(int popularity, Link* link);
+
+    void queue(Train& train, int entry_tick);
+    void goto_next_tick();
+};
+
+class Station {
+public:
     int id;
     int popularity;
-    string platform_name;
-    priority_queue<TrainTickPair, vector<TrainTickPair>, TrainCompare> holding_area;
-    Link *link; // destination platform is specified in here
+    string station_name;
+    vector<Platform>* platforms;
 
-    Platform(int id, int popularity, string& platform_name, Link *link);
-
-    void queue(Train &train, int entry_tick);
+    Station(int id, int popularity, string& station_name);
     void goto_next_tick();
 };
