@@ -201,12 +201,14 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     }
 
     // ======== Clean up code ========
-    // for (unsigned long int i = 0; i < num_stations; i++) {
-    //     for (unsigned long int j = 0; j < stations[i].platforms.size(); j++) {
-    //         delete stations[i].platforms.at(j);
-    //     }
-    //     // delete stations[i].platforms;
-    // }
+    for (unsigned long int i = 0; i < num_stations; i++) {
+        for (unsigned long int j = 0; j < stations[i].platforms.size(); j++) {
+            delete stations[i].platforms[j];
+        }
+    }
+    for (unsigned long int i = 0; i < trains.size(); i++) {
+        delete trains[i];
+    }
 }
 
 vector<string> extract_station_names(string& line) {
