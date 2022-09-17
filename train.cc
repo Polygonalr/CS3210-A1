@@ -6,9 +6,48 @@
 using std::string;
 using std::vector;
 
-Train::Train(int id, string& destination, vector<string>& schedule,
-             vector<string>& next_schedule)
-    : schedule(schedule), next_schedule(next_schedule) {
+Train::Train(int id, long unsigned int position, vector<int>* line, bool forward, LineColour colour) {
     this->id = id;
-    this->destination = destination;
+    this->position = position;
+    this->line = line;
+    this->forward = forward;
+    this->colour = colour;
+}
+
+void Train::move() {
+    if (forward) {
+        if (position == line->size() - 1) {
+            forward = false;
+            position--;
+        } else {
+            position++;
+        }
+    } else {
+        if (position == 0) {
+            forward = true;
+            position++;
+        } else {
+            position--;
+        }
+    }
+}
+
+int Train::current_station_id() {
+    return line->at(position);
+}
+
+int Train::next_station_id() {
+    if (forward) {
+        if (position == line->size() - 1) {
+            return line->at(position - 1);
+        } else {
+            return line->at(position + 1);
+        }
+    } else {
+        if (position == 0) {
+            return line->at(position + 1);
+        } else {
+            return line->at(position - 1);
+        }
+    }
 }

@@ -11,17 +11,65 @@ using namespace std;
 using adjacency_matrix = vector<std::vector<size_t>>;
 
 // global variables :D
+int train_id_counter = 0;
 int total_trains;
 size_t global_tick = 0;
 size_t ticks_to_simulate;
-vector<Train> trains;
+vector<Train*> trains;
 vector<Station> stations;
-vector<Link> links;
-vector<Platform> platform;
+vector<Platform> platforms;
 map<string, int> station_name_to_id;
 vector<int> green_line;
 vector<int> yellow_line;
 vector<int> blue_line;
+vector<vector<bool>> platform_initialized;
+vector<vector<bool>> link_occupied;
+
+void initialise_platforms(vector<int>& line) {
+    for (unsigned long int i = 0; i < line.size() - 1; i++) {
+        int station_id = line[i];
+        int next_station_id = line[i + 1];
+        Station *station = &stations[station_id];
+        Station *next_station = &stations[next_station_id];
+
+        if (platform_initialized[station_id][next_station_id]) {
+            continue;
+        }
+
+        station->platforms[next_station_id] = new Platform(station->popularity, station_id, next_station_id);
+        next_station->platforms[station_id] = new Platform(next_station->popularity, next_station_id, station_id);
+        printf("Initialised platform between %d and %d\n", station_id, next_station_id);
+
+        platform_initialized[station_id][next_station_id] = true;
+        platform_initialized[next_station_id][station_id] = true;
+    }
+}
+
+void print_status(int tick) {
+    printf("%d: ", tick);
+    // print blue troons first
+    for (auto train : trains) {
+        if (train->colour == BLUE) {
+            printf("b%d-", train->id);
+            printf("%s ", stations[train->current_station_id()].station_name.c_str());
+        }
+    }
+    // print green troons
+    for (auto train : trains) {
+        if (train->colour == GREEN) {
+            printf("g%d-", train->id);
+            printf("%s ", stations[train->current_station_id()].station_name.c_str());
+        }
+    }
+    // print yellow troons
+    for (auto train : trains) {
+        if (train->colour == YELLOW) {
+            printf("y%d-", train->id);
+            printf("%s ", stations[train->current_station_id()].station_name.c_str());
+        }
+    }
+    printf("\n");
+}
 
 void simulate(size_t num_stations, const vector<string>& station_names,
               const std::vector<size_t>& popularities,
@@ -31,9 +79,18 @@ void simulate(size_t num_stations, const vector<string>& station_names,
               const vector<string>& blue_station_names, size_t ticks,
               size_t num_green_trains, size_t num_yellow_trains,
               size_t num_blue_trains, size_t num_lines) {
+    // Silence the compiler
+    (void)mat;
+    (void)num_blue_trains;
+    (void)num_yellow_trains;
+    (void)num_green_trains;
+    (void)num_lines;
+    
 
     // Initialise global variables
     ticks_to_simulate = ticks;
+    platform_initialized = vector<vector<bool>>(num_stations, vector<bool>(num_stations, false));
+    link_occupied = vector<vector<bool>>(num_stations, vector<bool>(num_stations, false));
 
     // Initialise train stations, links and platforms
     for (long unsigned int i = 0; i < station_names.size(); i++) {
@@ -54,184 +111,102 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     }
 
     // ======== Initialise starting platform of green line ========
-    Station starting_station = stations[green_line[0]];
-    Platform *first_platform = new Platform(starting_station.popularity, NULL);
-    starting_station.platforms->push_back(first_platform);
-
-    Platform *previous_platform = first_platform, *current_platform;
-
-    for (long unsigned int i = 1; i < green_line.size(); i++) {
-        int station_id = green_line[i];
-        int previous_station_id = green_line[i - 1];
-
-        // Create a new platform for current station
-        Station current_station = stations[station_id];
-        current_platform = new Platform(current_station.popularity, NULL);
-
-        // Initialise link from previous platform to current platform
-        Link forward_link = Link(current_platform, mat[previous_station_id][station_id]);
-        previous_platform->link = &forward_link;
-
-        // Finally, add the platform to the current station
-        current_station.platforms->push_back(current_platform);
-        previous_platform = current_platform;
-    }
-
-    for (long unsigned int i = green_line.size() - 2; i > 0; i--) {
-        int station_id = green_line[i];
-        int next_station_id = green_line[i + 1];
-
-        // Create a new platform for current station
-        Station current_station = stations[station_id];
-        current_platform = new Platform(current_station.popularity, NULL);
-
-        // Initialise link from previous platform to current platform
-        Link backward_link = Link(current_platform, mat[next_station_id][station_id]);
-        previous_platform->link = &backward_link;
-
-        // Finally, add the platform to the current station
-        current_station.platforms->push_back(current_platform);
-        previous_platform = current_platform;
-    }
-
-    // Link the last platform to the first platform
-    Link last_link = Link(first_platform, mat[green_line[1]][green_line[0]]);
-    previous_platform->link = &last_link;
+    printf("Initialising green line\n");
+    initialise_platforms(green_line);
 
     // ======== Initialise starting platform of blue line ========
-    starting_station = stations[blue_line[0]];
-    first_platform = new Platform(starting_station.popularity, NULL);
-    starting_station.platforms->push_back(first_platform);
-
-    previous_platform = first_platform;
-
-    for (long unsigned int i = 1; i < blue_line.size(); i++) {
-        int station_id = blue_line[i];
-        int previous_station_id = blue_line[i - 1];
-
-        // Create a new platform for current station
-        Station current_station = stations[station_id];
-        current_platform = new Platform(current_station.popularity, NULL);
-
-        // Initialise link from previous platform to current platform
-        Link forward_link = Link(current_platform, mat[previous_station_id][station_id]);
-        previous_platform->link = &forward_link;
-
-        // Finally, add the platform to the current station
-        current_station.platforms->push_back(current_platform);
-        previous_platform = current_platform;
-    }
-
-    for (long unsigned int i = blue_line.size() - 2; i > 0; i--) {
-        int station_id = blue_line[i];
-        int next_station_id = blue_line[i + 1];
-
-        // Create a new platform for current station
-        Station current_station = stations[station_id];
-        current_platform = new Platform(current_station.popularity, NULL);
-
-        // Initialise link from previous platform to current platform
-        Link backward_link = Link(current_platform, mat[next_station_id][station_id]);
-        previous_platform->link = &backward_link;
-
-        // Finally, add the platform to the current station
-        current_station.platforms->push_back(current_platform);
-        previous_platform = current_platform;
-    }
-
-    // Link the last platform to the first platform
-    last_link = Link(first_platform, mat[blue_line[1]][blue_line[0]]);
-    previous_platform->link = &last_link;
+    printf("Initialising blue line\n");
+    initialise_platforms(blue_line);
 
     // ======== Initialise starting platform of yellow line ========
-    starting_station = stations[yellow_line[0]];
-    first_platform = new Platform(starting_station.popularity, NULL);
-    starting_station.platforms->push_back(first_platform);
+    printf("Initialising yellow line\n");
+    initialise_platforms(yellow_line);
 
-    previous_platform = first_platform;
-
-    for (long unsigned int i = 1; i < yellow_line.size(); i++) {
-        int station_id = yellow_line[i];
-        int previous_station_id = yellow_line[i - 1];
-
-        // Create a new platform for current station
-        Station current_station = stations[station_id];
-        current_platform = new Platform(current_station.popularity, NULL);
-
-        // Initialise link from previous platform to current platform
-        Link forward_link = Link(current_platform, mat[previous_station_id][station_id]);
-        previous_platform->link = &forward_link;
-
-        // Finally, add the platform to the current station
-        current_station.platforms->push_back(current_platform);
-        previous_platform = current_platform;
-    }
-
-    for (long unsigned int i = yellow_line.size() - 2; i > 0; i--) {
-        int station_id = yellow_line[i];
-        int next_station_id = yellow_line[i + 1];
-
-        // Create a new platform for current station
-        Station current_station = stations[station_id];
-        current_platform = new Platform(current_station.popularity, NULL);
-
-        // Initialise link from previous platform to current platform
-        Link backward_link = Link(current_platform, mat[next_station_id][station_id]);
-        previous_platform->link = &backward_link;
-
-        // Finally, add the platform to the current station
-        current_station.platforms->push_back(current_platform);
-        previous_platform = current_platform;
-    }
-
-    // Link the last platform to the first platform
-    last_link = Link(first_platform, mat[yellow_line[1]][yellow_line[0]]);
-    previous_platform->link = &last_link;
-    
-
-    std::cout << num_stations << '\n';
-
-    for (size_t i{}; i < num_stations; ++i) {
-        std::cout << station_names[i] << ' ' << popularities[i] << ' ';
-    }
-    std::cout << '\n';
-
-    for (size_t i{}; i < num_stations; ++i) {
-        for (size_t j{}; j < num_stations; ++j) {
-            std::cout << mat[i][j] << ' ';
+    for (unsigned long int i = 0; i < num_stations; i++) {
+        Station station = stations[i];
+        printf("Station %ld has %ld platforms\n", i, station.platforms.size());
+        // for (unsigned long int j = 0; j < station.platforms.size(); j++) {
+        //     Platform platform = *station.platforms[j];
+        //     printf("%d ", platform.destination_station_id);
+        // }
+        for(auto it = station.platforms.cbegin(); it != station.platforms.cend(); ++it)
+        {
+            std::cout << it->first << " ";
         }
-        std::cout << '\n';
+        printf("\n");
     }
 
-    for (const auto& stn : green_station_names) {
-        std::cout << stn << ' ';
+    Train* t;
+    for (size_t current_tick = 0; current_tick < ticks; current_tick++) {
+        // SPAWN TRAIN
+        // Green
+        if (num_green_trains >= 1) {
+            t = new Train(train_id_counter, 0, &green_line, true, GREEN);
+            printf("Spawned green train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
+            stations[t->current_station_id()].platforms.at(t->next_station_id())->queue(t, current_tick);
+            train_id_counter++;
+            num_green_trains--;
+            trains.push_back(t);
+            if (num_green_trains >= 1) {
+                t = new Train(train_id_counter, green_line.size() - 1, &green_line, false, GREEN);
+                printf("Spawned green train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
+                stations[t->current_station_id()].platforms.at(t->next_station_id())->queue(t, current_tick);
+                train_id_counter++;
+                num_green_trains--;
+                trains.push_back(t);
+            }
+        }
+        // Yellow
+        if (num_yellow_trains >= 1) {
+            t = new Train(train_id_counter, 0, &yellow_line, true, YELLOW);
+            printf("Spawned yellow train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
+            stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
+            train_id_counter++;
+            num_yellow_trains--;
+            trains.push_back(t);
+            if (num_yellow_trains >= 1) {
+                t = new Train(train_id_counter, yellow_line.size() - 1, &yellow_line, false, YELLOW);
+                printf("Spawned yellow train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
+                stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
+                train_id_counter++;
+                num_yellow_trains--;
+                trains.push_back(t);
+            }
+        }
+        // Blue
+        if (num_blue_trains >= 1) {
+            t = new Train(train_id_counter, 0, &blue_line, true, BLUE);
+            printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
+            stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
+            train_id_counter++;
+            num_blue_trains--;
+            trains.push_back(t);
+            if (num_blue_trains >= 1) {
+                t = new Train(train_id_counter, blue_line.size() - 1, &blue_line, false, BLUE);
+                printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
+                stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
+                train_id_counter++;
+                num_blue_trains--;
+                trains.push_back(t);
+            }
+        }
+        // PROGRESS TRANSIT & INSERT INTO QUEUE
+
+        // EMPTY PLATFORM
+
+        // DEQUEUE & OPEN DOOR
+
+        // PRINT STATUS OF ALL PLATFORMS
+        print_status(current_tick);
     }
-    std::cout << '\n';
-
-    for (const auto& stn : yellow_station_names) {
-        std::cout << stn << ' ';
-    }
-    std::cout << '\n';
-
-    for (const auto& stn : blue_station_names) {
-        std::cout << stn << ' ';
-    }
-    std::cout << '\n';
-
-    std::cout << ticks << '\n';
-    std::cout << num_green_trains << '\n';
-    std::cout << num_yellow_trains << '\n';
-    std::cout << num_blue_trains << '\n';
-
-    std::cout << num_lines << '\n';
 
     // ======== Clean up code ========
-    for (unsigned long int i = 0; i < num_stations; i++) {
-        for (unsigned long int j = 0; j < stations[i].platforms->size(); j++) {
-            delete stations[i].platforms->at(j);
-        }
-        delete stations[i].platforms;
-    }
+    // for (unsigned long int i = 0; i < num_stations; i++) {
+    //     for (unsigned long int j = 0; j < stations[i].platforms.size(); j++) {
+    //         delete stations[i].platforms.at(j);
+    //     }
+    //     // delete stations[i].platforms;
+    // }
 }
 
 vector<string> extract_station_names(string& line) {

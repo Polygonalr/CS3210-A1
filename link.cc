@@ -21,7 +21,7 @@ void Link::goto_next_tick() {
     if (transit_time_remaining > 0) {
         transit_time_remaining--;
     } else if (transit_time_remaining == 0) {
-        destination->queue(*train, current_tick);
+        destination->queue(train, current_tick);
         train = NULL;
     }
     current_tick++;

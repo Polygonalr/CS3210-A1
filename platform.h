@@ -1,19 +1,21 @@
-#include "link.h"
+#include "train.h"
 
 #include <string>
 #include <vector>
 #include <queue>
+#include <map>
 
 using std::string;
 using std::vector;
 using std::priority_queue;
+using std::map;
 
 class TrainTickPair {
 public:
-    Train train;
-    int entry_tick;
+    Train* train;
+    size_t entry_tick;
 
-    TrainTickPair(Train& train, int entry_tick);
+    TrainTickPair(Train* train, size_t entry_tick);
 };
 
 
@@ -25,11 +27,12 @@ class Platform {
 public:
     int popularity;
     priority_queue<TrainTickPair, vector<TrainTickPair>, TrainCompare> holding_area;
-    Link* link; // destination platform is specified in here
+    int source_station_id;
+    int destination_station_id;
 
-    Platform(int popularity, Link* link);
+    Platform(int popularity, int source_station_id, int destination_station_id);
 
-    void queue(Train& train, int entry_tick);
+    void queue(Train* train, size_t entry_tick);
     void goto_next_tick();
 };
 
@@ -38,7 +41,7 @@ public:
     int id;
     int popularity;
     string station_name;
-    vector<Platform*>* platforms;
+    map<int, Platform*> platforms;
 
     Station(int id, int popularity, string& station_name);
     void goto_next_tick();
