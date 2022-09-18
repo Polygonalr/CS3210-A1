@@ -20,6 +20,11 @@ bool TrainCompare::operator()(const TrainTickPair& left_pair, const TrainTickPai
     }
 }
 
+Link::Link(int source, int destination) {
+    this->source = source;
+    this->destination = destination;
+}
+
 Platform::Platform(int popularity, int source_station_id, int destination_station_id) {
     this->popularity = popularity;
     this->source_station_id = source_station_id;

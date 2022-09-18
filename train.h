@@ -19,10 +19,13 @@ public:
     long unsigned int position; // 0 is at the start, line.size()-1 means at the end
     LineColour colour;
     bool forward;
+    size_t completion_tick;
 
     Train(int id, long unsigned int position, vector<int>* line, bool forward, LineColour colour);
-    void move();
+    void move_to_next_station();
     int current_station_id();
     int next_station_id();
+    bool hasCompleted(size_t current_tick);
+    void progress();
 };
 #endif

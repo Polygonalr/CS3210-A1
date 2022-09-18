@@ -18,9 +18,16 @@ public:
     TrainTickPair(Train* train, size_t entry_tick);
 };
 
-
 struct TrainCompare {
     bool operator()(const TrainTickPair& left_pair, const TrainTickPair& right_pair);
+};
+
+class Link {
+public:
+    int source;
+    int destination;
+
+    Link(int source, int destination);
 };
 
 class Platform {

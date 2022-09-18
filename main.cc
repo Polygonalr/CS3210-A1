@@ -22,8 +22,8 @@ map<string, int> station_name_to_id;
 vector<int> green_line;
 vector<int> yellow_line;
 vector<int> blue_line;
-vector<vector<bool>> platform_initialized;
-vector<vector<bool>> link_occupied;
+vector<vector<int>> link_occupancies; // -2 means no link, -1 means link not occupied, >=0 means train with that id is occupying
+vector<Link> links;
 
 void initialise_platforms(vector<int>& line) {
     for (unsigned long int i = 0; i < line.size() - 1; i++) {
@@ -32,16 +32,18 @@ void initialise_platforms(vector<int>& line) {
         Station *station = &stations[station_id];
         Station *next_station = &stations[next_station_id];
 
-        if (platform_initialized[station_id][next_station_id]) {
+        if (link_occupancies[station_id][next_station_id] == -1) {
             continue;
         }
 
         station->platforms[next_station_id] = new Platform(station->popularity, station_id, next_station_id);
         next_station->platforms[station_id] = new Platform(next_station->popularity, next_station_id, station_id);
         printf("Initialised platform between %d and %d\n", station_id, next_station_id);
-
-        platform_initialized[station_id][next_station_id] = true;
-        platform_initialized[next_station_id][station_id] = true;
+        
+        link_occupancies[station_id][next_station_id] = -1;
+        link_occupancies[next_station_id][station_id] = -1;
+        links.push_back(Link(station_id, next_station_id));
+        links.push_back(Link(next_station_id, station_id));
     }
 }
 
@@ -89,8 +91,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
 
     // Initialise global variables
     ticks_to_simulate = ticks;
-    platform_initialized = vector<vector<bool>>(num_stations, vector<bool>(num_stations, false));
-    link_occupied = vector<vector<bool>>(num_stations, vector<bool>(num_stations, false));
+    link_occupancies = vector<vector<int>>(num_stations, vector<int>(num_stations, -2));
 
     // Initialise train stations, links and platforms
     for (long unsigned int i = 0; i < station_names.size(); i++) {
@@ -124,7 +125,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
 
     for (unsigned long int i = 0; i < num_stations; i++) {
         Station station = stations[i];
-        printf("Station %ld has %ld platforms\n", i, station.platforms.size());
+        printf("Station %ld has %lld platforms\n", i, station.platforms.size());
         // for (unsigned long int j = 0; j < station.platforms.size(); j++) {
         //     Platform platform = *station.platforms[j];
         //     printf("%d ", platform.destination_station_id);
@@ -191,7 +192,19 @@ void simulate(size_t num_stations, const vector<string>& station_names,
             }
         }
         // PROGRESS TRANSIT & INSERT INTO QUEUE
-
+        for (Link link : links) {
+            int link_occupied_by_id = link_occupancies[link.source][link.destination];
+            if (link_occupied_by_id >= 0) {
+                Train *train = trains.at(link_occupied_by_id);
+                if (!train->hasCompleted(current_tick)) {
+                    train->progress();
+                } else {
+                    link_occupancies[link.source][link.destination] = -1;
+                    train->move_to_next_station();
+                    stations[train->current_station_id()].platforms[t->next_station_id()]->queue(train, current_tick);
+                }
+            }
+        }
         // EMPTY PLATFORM
 
         // DEQUEUE & OPEN DOOR

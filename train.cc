@@ -12,9 +12,10 @@ Train::Train(int id, long unsigned int position, vector<int>* line, bool forward
     this->line = line;
     this->forward = forward;
     this->colour = colour;
+    this->completion_tick = -1;
 }
 
-void Train::move() {
+void Train::move_to_next_station() {
     if (forward) {
         if (position == line->size() - 1) {
             forward = false;
@@ -50,4 +51,12 @@ int Train::next_station_id() {
             return line->at(position - 1);
         }
     }
+}
+
+bool Train::hasCompleted(size_t current_tick) {
+    return completion_tick == current_tick;
+}
+
+void Train::progress() {
+    completion_tick++;
 }
