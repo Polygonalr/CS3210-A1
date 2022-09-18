@@ -12,6 +12,12 @@ typedef enum LineColour {
     YELLOW,
 } LineColour;
 
+typedef enum TrainStatus {
+    TRANSIT,
+    QUEUING,
+    OPEN_DOOR,
+} TrainStatus;
+
 class Train {
 public:
     int id;
@@ -20,12 +26,12 @@ public:
     LineColour colour;
     bool forward;
     size_t completion_tick;
+    TrainStatus status;
 
     Train(int id, long unsigned int position, vector<int>* line, bool forward, LineColour colour);
     void move_to_next_station();
     int current_station_id();
     int next_station_id();
     bool hasCompleted(size_t current_tick);
-    void progress();
 };
 #endif

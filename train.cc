@@ -13,6 +13,7 @@ Train::Train(int id, long unsigned int position, vector<int>* line, bool forward
     this->forward = forward;
     this->colour = colour;
     this->completion_tick = -1;
+    this->status = QUEUING;
 }
 
 void Train::move_to_next_station() {
@@ -55,8 +56,4 @@ int Train::next_station_id() {
 
 bool Train::hasCompleted(size_t current_tick) {
     return completion_tick == current_tick;
-}
-
-void Train::progress() {
-    completion_tick++;
 }

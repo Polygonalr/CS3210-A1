@@ -125,7 +125,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
 
     for (unsigned long int i = 0; i < num_stations; i++) {
         Station station = stations[i];
-        printf("Station %ld has %lld platforms\n", i, station.platforms.size());
+        printf("Station %ld has %ld platforms\n", i, station.platforms.size());
         // for (unsigned long int j = 0; j < station.platforms.size(); j++) {
         //     Platform platform = *station.platforms[j];
         //     printf("%d ", platform.destination_station_id);
@@ -196,9 +196,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
             int link_occupied_by_id = link_occupancies[link.source][link.destination];
             if (link_occupied_by_id >= 0) {
                 Train *train = trains.at(link_occupied_by_id);
-                if (!train->hasCompleted(current_tick)) {
-                    train->progress();
-                } else {
+                if (train->hasCompleted(current_tick)) {
                     link_occupancies[link.source][link.destination] = -1;
                     train->move_to_next_station();
                     stations[train->current_station_id()].platforms[t->next_station_id()]->queue(train, current_tick);
@@ -206,6 +204,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
             }
         }
         // EMPTY PLATFORM
+
 
         // DEQUEUE & OPEN DOOR
 
