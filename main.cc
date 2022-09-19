@@ -219,7 +219,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
                     train->status = QUEUED; // Change status of the train
                     printf("Queueing train %d at %s ", train->id, stations[train->current_station_id()].station_name.c_str());
                     printf("to next station %s\n", stations[train->next_station_id()].station_name.c_str());
-                    stations[train->current_station_id()].platforms[t->next_station_id()]->queue(train, current_tick); // Queue train into holding area of specified platform
+                    stations[train->current_station_id()].platforms[train->next_station_id()]->queue(train, current_tick); // Queue train into holding area of specified platform
                 }
             }
         }
