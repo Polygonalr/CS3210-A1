@@ -55,5 +55,5 @@ int Train::next_station_id() {
 }
 
 bool Train::has_completed(size_t current_tick) {
-    return completion_tick == current_tick;
+    return completion_tick <= current_tick;
 }
