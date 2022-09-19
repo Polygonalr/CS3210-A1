@@ -30,6 +30,7 @@ Platform::Platform(int popularity, int source_station_id, int destination_statio
     this->popularity = popularity;
     this->source_station_id = source_station_id;
     this->destination_station_id = destination_station_id;
+    this->current_train = NULL;
     this->has_train = false;
 }
 
