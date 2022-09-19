@@ -25,10 +25,9 @@ map<string, int> station_name_to_id;
 vector<int> green_line;
 vector<int> yellow_line;
 vector<int> blue_line;
-vector<vector<int>> link_occupancies; // -2 means no link, -1 means link not occupied, >=0 means train with that id is occupying
 vector<Link> links;
 
-void initialise_platforms(vector<int>& line) {
+void initialise_platforms(vector<int>& line, int** link_occupancies) {
     for (unsigned long int i = 0; i < line.size() - 1; i++) {
         int station_id = line[i];
         int next_station_id = line[i + 1];
@@ -108,7 +107,10 @@ void simulate(size_t num_stations, const vector<string>& station_names,
 
     // Initialise global variables
     ticks_to_simulate = ticks;
-    link_occupancies = vector<vector<int>>(num_stations, vector<int>(num_stations, -2));
+    int **link_occupancies = new int*[num_stations];
+    for (size_t i = 0; i < num_stations; i++) {
+        link_occupancies[i] = new int[num_stations] {-2};
+    }
 
     // Initialise train stations, links and platforms
     for (long unsigned int i = 0; i < station_names.size(); i++) {
@@ -129,13 +131,13 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     }
 
     // ======== Initialise starting platform of green line ========
-    initialise_platforms(green_line);
+    initialise_platforms(green_line, link_occupancies);
 
     // ======== Initialise starting platform of blue line ========
-    initialise_platforms(blue_line);
+    initialise_platforms(blue_line, link_occupancies);
 
     // ======== Initialise starting platform of yellow line ========
-    initialise_platforms(yellow_line);
+    initialise_platforms(yellow_line, link_occupancies);
 
     // for (unsigned long int i = 0; i < num_stations; i++) {
     //     Station station = stations[i];
