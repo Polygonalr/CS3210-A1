@@ -36,11 +36,15 @@ public:
     priority_queue<TrainTickPair, vector<TrainTickPair>, TrainCompare> holding_area;
     int source_station_id;
     int destination_station_id;
+    Train* current_train;
+    bool has_train;
 
     Platform(int popularity, int source_station_id, int destination_station_id);
 
     void queue(Train* train, size_t entry_tick);
-    void goto_next_tick();
+    void dequeue(size_t current_tick);
+    bool has_completed(size_t current_tick);
+    int empty_platform(size_t current_tick);
 };
 
 class Station {

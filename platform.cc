@@ -13,6 +13,7 @@ TrainTickPair::TrainTickPair(Train* train, size_t entry_tick) : train(train) {
 }
 
 bool TrainCompare::operator()(const TrainTickPair& left_pair, const TrainTickPair& right_pair) {
+    printf("OPERATOR\n");
     if (left_pair.entry_tick != right_pair.entry_tick) {
         return left_pair.entry_tick > right_pair.entry_tick;
     } else {
@@ -29,19 +30,44 @@ Platform::Platform(int popularity, int source_station_id, int destination_statio
     this->popularity = popularity;
     this->source_station_id = source_station_id;
     this->destination_station_id = destination_station_id;
+    this->has_train = false;
 }
 
 void Platform::queue(Train* train, size_t entry_tick) {
     TrainTickPair ttp(train, entry_tick);
+    // CRITICAL
     holding_area.push(ttp);
 }
 
-void Platform::goto_next_tick() {
-    // if (!holding_area.empty()) {
-    //     TrainTickPair ttp = holding_area.top();
-    //     holding_area.pop();
-    //     // TODO: move train to link
-    // }
+void Platform::dequeue(size_t current_tick) {
+    if (holding_area.empty()) {
+        return;
+    }
+    Train* train = holding_area.top().train;
+    holding_area.pop();
+    train->status = PLATFORM;
+    train->completion_tick = current_tick + this->popularity + 1;
+    this->current_train = train;
+    has_train = true;
+}
+
+bool Platform::has_completed(size_t current_tick) {
+    return current_train->has_completed(current_tick);
+}
+
+int Platform::empty_platform(size_t current_tick) {
+    if (!has_train) {
+        return -1;
+    }
+    if (current_train->has_completed(current_tick)) {
+        if (current_train->status == PLATFORM) {
+            current_train->status = DEPARTING;
+            current_train->completion_tick++;
+        } else if (current_train->status == DEPARTING) {
+            return current_train->id;
+        }
+    }
+    return -1;
 }
 
 Station::Station(int id, int popularity, string& station_name) {

@@ -14,8 +14,9 @@ typedef enum LineColour {
 
 typedef enum TrainStatus {
     TRANSIT,
-    QUEUING,
-    OPEN_DOOR,
+    QUEUED,
+    PLATFORM,
+    DEPARTING,
 } TrainStatus;
 
 class Train {
@@ -32,6 +33,6 @@ public:
     void move_to_next_station();
     int current_station_id();
     int next_station_id();
-    bool hasCompleted(size_t current_tick);
+    bool has_completed(size_t current_tick);
 };
 #endif

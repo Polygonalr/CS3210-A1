@@ -17,7 +17,6 @@ size_t global_tick = 0;
 size_t ticks_to_simulate;
 vector<Train*> trains;
 vector<Station> stations;
-vector<Platform> platforms;
 map<string, int> station_name_to_id;
 vector<int> green_line;
 vector<int> yellow_line;
@@ -39,7 +38,7 @@ void initialise_platforms(vector<int>& line) {
         station->platforms[next_station_id] = new Platform(station->popularity, station_id, next_station_id);
         next_station->platforms[station_id] = new Platform(next_station->popularity, next_station_id, station_id);
         printf("Initialised platform between %d and %d\n", station_id, next_station_id);
-        
+
         link_occupancies[station_id][next_station_id] = -1;
         link_occupancies[next_station_id][station_id] = -1;
         links.push_back(Link(station_id, next_station_id));
@@ -53,21 +52,36 @@ void print_status(int tick) {
     for (auto train : trains) {
         if (train->colour == BLUE) {
             printf("b%d-", train->id);
-            printf("%s ", stations[train->current_station_id()].station_name.c_str());
+            printf("%s", stations[train->current_station_id()].station_name.c_str());
+            if(train->status == TRANSIT) {
+                printf("-");
+                printf("%s", stations[train->next_station_id()].station_name.c_str());
+            }
+            cout << " ";
         }
     }
     // print green troons
     for (auto train : trains) {
         if (train->colour == GREEN) {
             printf("g%d-", train->id);
-            printf("%s ", stations[train->current_station_id()].station_name.c_str());
+            printf("%s", stations[train->current_station_id()].station_name.c_str());
+            if(train->status == TRANSIT) {
+                printf("-");
+                printf("%s", stations[train->next_station_id()].station_name.c_str());
+            }
+            cout << " ";
         }
     }
     // print yellow troons
     for (auto train : trains) {
         if (train->colour == YELLOW) {
             printf("y%d-", train->id);
-            printf("%s ", stations[train->current_station_id()].station_name.c_str());
+            printf("%s", stations[train->current_station_id()].station_name.c_str());
+            if(train->status == TRANSIT) {
+                printf("-");
+                printf("%s", stations[train->next_station_id()].station_name.c_str());
+            }
+            cout << " ";
         }
     }
     printf("\n");
@@ -87,7 +101,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     (void)num_yellow_trains;
     (void)num_green_trains;
     (void)num_lines;
-    
+
 
     // Initialise global variables
     ticks_to_simulate = ticks;
@@ -193,20 +207,47 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         }
         // PROGRESS TRANSIT & INSERT INTO QUEUE
         for (Link link : links) {
+            printf("Processing link %s -> %s\n", stations[link.source].station_name.c_str(), stations[link.destination].station_name.c_str());
             int link_occupied_by_id = link_occupancies[link.source][link.destination];
             if (link_occupied_by_id >= 0) {
                 Train *train = trains.at(link_occupied_by_id);
-                if (train->hasCompleted(current_tick)) {
-                    link_occupancies[link.source][link.destination] = -1;
-                    train->move_to_next_station();
-                    stations[train->current_station_id()].platforms[t->next_station_id()]->queue(train, current_tick);
+                printf("Train ID: %d\n", train->id);
+                if (train->has_completed(current_tick)) {
+                    link_occupancies[link.source][link.destination] = -1; // Set link to unoccupied
+                    printf("Moving to next station\n");
+                    train->move_to_next_station(); // Move train into next station
+                    train->status = QUEUED; // Change status of the train
+                    printf("Queueing train %d at %s ", train->id, stations[train->current_station_id()].station_name.c_str());
+                    printf("to next station %s\n", stations[train->next_station_id()].station_name.c_str());
+                    stations[train->current_station_id()].platforms[t->next_station_id()]->queue(train, current_tick); // Queue train into holding area of specified platform
                 }
             }
         }
-        // EMPTY PLATFORM
+        // BARRIER SHOULD BE HERE
+        printf("Processing stations\n");
+        for (Station station : stations) {
+            for (auto it = station.platforms.begin(); it != station.platforms.end(); it++) {
+                // EMPTY PLATFORMS
+                if (link_occupancies[it->second->source_station_id][it->second->destination_station_id] != -1) {
+                    continue;
+                }
+                int train_id = it->second->empty_platform(current_tick);
+                if (train_id != -1) {
+                    // Platform is emptied, push train to link
+                    // it->second here is Platform
+                    link_occupancies[it->second->source_station_id][it->second->destination_station_id] = train_id;
+                    it->second->current_train->status = TRANSIT;
+                    it->second->current_train->completion_tick = current_tick + mat[it->second->source_station_id][it->second->destination_station_id];
+                    it->second->current_train = NULL;
+                    it->second->has_train = false;
+                }
 
-
-        // DEQUEUE & OPEN DOOR
+                // DEQUEUE & OPEN DOOR
+                if (it->second->current_train == NULL) {
+                    it->second->dequeue(current_tick);
+                }
+            }
+        }
 
         // PRINT STATUS OF ALL PLATFORMS
         print_status(current_tick);

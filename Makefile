@@ -22,4 +22,4 @@ clean:
 	$(RM) *.o troons
 
 debug: main.cc
-	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) -D DEBUG -o troons main.cc
+	$(CXX) $(CXXFLAGS) $(DEBUGFLAGS) -D DEBUG -o troons main.cc train.cc platform.cc
