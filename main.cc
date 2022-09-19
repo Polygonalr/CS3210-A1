@@ -53,26 +53,38 @@ void initialise_platforms(vector<int>& line) {
 void print_status(int tick) {
     stringstream ss, blue_ss, yellow_ss, green_ss;
     ss << tick << ": ";
-    for (auto train : blue_trains) {
-        blue_ss << "b" << train->id << "-" << stations[train->current_station_id()].station_name.c_str();
-        if(train->status == TRANSIT) {
-            blue_ss << "->" << stations[train->next_station_id()].station_name.c_str();
+    #pragma omp parallel sections
+    {
+        #pragma omp section
+        {
+            for (auto train : blue_trains) {
+                blue_ss << "b" << train->id << "-" << stations[train->current_station_id()].station_name.c_str();
+                if(train->status == TRANSIT) {
+                    blue_ss << "->" << stations[train->next_station_id()].station_name.c_str();
+                }
+                blue_ss << " ";
+            }
         }
-        blue_ss << " ";
-    }
-    for (auto train : green_trains) {
-        green_ss << "g" << train->id << "-" << stations[train->current_station_id()].station_name.c_str();
-        if(train->status == TRANSIT) {
-            green_ss << "->" << stations[train->next_station_id()].station_name.c_str();
+        #pragma omp section
+        {
+            for (auto train : green_trains) {
+                green_ss << "g" << train->id << "-" << stations[train->current_station_id()].station_name.c_str();
+                if(train->status == TRANSIT) {
+                    green_ss << "->" << stations[train->next_station_id()].station_name.c_str();
+                }
+                green_ss << " ";
+            }
         }
-        green_ss << " ";
-    }
-    for (auto train : yellow_trains) {
-        yellow_ss << "y" << train->id << "-" << stations[train->current_station_id()].station_name.c_str();
-        if(train->status == TRANSIT) {
-            yellow_ss << "->" << stations[train->next_station_id()].station_name.c_str();
+        #pragma omp section
+        {
+            for (auto train : yellow_trains) {
+                yellow_ss << "y" << train->id << "-" << stations[train->current_station_id()].station_name.c_str();
+                if(train->status == TRANSIT) {
+                    yellow_ss << "->" << stations[train->next_station_id()].station_name.c_str();
+                }
+                yellow_ss << " ";
+            }
         }
-        yellow_ss << " ";
     }
     ss << blue_ss.str() << green_ss.str() << yellow_ss.str();
     cout << ss.str() << endl;

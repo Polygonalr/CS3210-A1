@@ -37,7 +37,9 @@ void Platform::queue(Train* train, size_t entry_tick) {
     TrainTickPair ttp(train, entry_tick);
     // CRITICAL
     #pragma omp critical
-    holding_area.push(ttp);
+    {
+        holding_area.push(ttp);
+    }
 }
 
 void Platform::dequeue(size_t current_tick) {
