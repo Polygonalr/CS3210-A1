@@ -17,6 +17,9 @@ int total_trains;
 size_t global_tick = 0;
 size_t ticks_to_simulate;
 vector<Train*> trains;
+vector<Train*> blue_trains;
+vector<Train*> green_trains;
+vector<Train*> yellow_trains;
 vector<Station> stations;
 map<string, int> station_name_to_id;
 vector<int> green_line;
@@ -48,44 +51,31 @@ void initialise_platforms(vector<int>& line) {
 }
 
 void print_status(int tick) {
-    printf("%d: ", tick);
-    // print blue troons first
-    for (auto train : trains) {
-        if (train->colour == BLUE) {
-            printf("b%d-", train->id);
-            printf("%s", stations[train->current_station_id()].station_name.c_str());
-            if(train->status == TRANSIT) {
-                printf("-");
-                printf("%s", stations[train->next_station_id()].station_name.c_str());
-            }
-            cout << " ";
+    stringstream ss, blue_ss, yellow_ss, green_ss;
+    ss << tick << ": ";
+    for (auto train : blue_trains) {
+        blue_ss << "b" << train->id << "-" << stations[train->current_station_id()].station_name.c_str();
+        if(train->status == TRANSIT) {
+            blue_ss << "->" << stations[train->next_station_id()].station_name.c_str();
         }
+        blue_ss << " ";
     }
-    // print green troons
-    for (auto train : trains) {
-        if (train->colour == GREEN) {
-            printf("g%d-", train->id);
-            printf("%s", stations[train->current_station_id()].station_name.c_str());
-            if(train->status == TRANSIT) {
-                printf("-");
-                printf("%s", stations[train->next_station_id()].station_name.c_str());
-            }
-            cout << " ";
+    for (auto train : green_trains) {
+        green_ss << "g" << train->id << "-" << stations[train->current_station_id()].station_name.c_str();
+        if(train->status == TRANSIT) {
+            green_ss << "->" << stations[train->next_station_id()].station_name.c_str();
         }
+        green_ss << " ";
     }
-    // print yellow troons
-    for (auto train : trains) {
-        if (train->colour == YELLOW) {
-            printf("y%d-", train->id);
-            printf("%s", stations[train->current_station_id()].station_name.c_str());
-            if(train->status == TRANSIT) {
-                printf("->");
-                printf("%s", stations[train->next_station_id()].station_name.c_str());
-            }
-            cout << " ";
+    for (auto train : yellow_trains) {
+        yellow_ss << "y" << train->id << "-" << stations[train->current_station_id()].station_name.c_str();
+        if(train->status == TRANSIT) {
+            yellow_ss << "->" << stations[train->next_station_id()].station_name.c_str();
         }
+        yellow_ss << " ";
     }
-    printf("\n");
+    ss << blue_ss.str() << green_ss.str() << yellow_ss.str();
+    cout << ss.str() << endl;
 }
 
 void simulate(size_t num_stations, const vector<string>& station_names,
@@ -159,12 +149,14 @@ void simulate(size_t num_stations, const vector<string>& station_names,
             train_id_counter++;
             num_green_trains--;
             trains.push_back(t);
+            green_trains.push_back(t);
             if (num_green_trains >= 1) {
                 t = new Train(train_id_counter, green_line.size() - 1, &green_line, false, GREEN);
                 stations[t->current_station_id()].platforms.at(t->next_station_id())->queue(t, current_tick);
                 train_id_counter++;
                 num_green_trains--;
                 trains.push_back(t);
+                green_trains.push_back(t);
             }
         }
         // Yellow
@@ -174,12 +166,14 @@ void simulate(size_t num_stations, const vector<string>& station_names,
             train_id_counter++;
             num_yellow_trains--;
             trains.push_back(t);
+            yellow_trains.push_back(t);
             if (num_yellow_trains >= 1) {
                 t = new Train(train_id_counter, yellow_line.size() - 1, &yellow_line, false, YELLOW);
                 stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
                 train_id_counter++;
                 num_yellow_trains--;
                 trains.push_back(t);
+                yellow_trains.push_back(t);
             }
         }
         // Blue
@@ -190,6 +184,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
             train_id_counter++;
             num_blue_trains--;
             trains.push_back(t);
+            blue_trains.push_back(t);
             if (num_blue_trains >= 1) {
                 t = new Train(train_id_counter, blue_line.size() - 1, &blue_line, false, BLUE);
                 // printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
@@ -197,6 +192,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
                 train_id_counter++;
                 num_blue_trains--;
                 trains.push_back(t);
+                blue_trains.push_back(t);
             }
         }
         // PROGRESS TRANSIT & INSERT INTO QUEUE
