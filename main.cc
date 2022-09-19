@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <sstream>
 
 using namespace std;
 
@@ -37,7 +38,7 @@ void initialise_platforms(vector<int>& line) {
 
         station->platforms[next_station_id] = new Platform(station->popularity, station_id, next_station_id);
         next_station->platforms[station_id] = new Platform(next_station->popularity, next_station_id, station_id);
-        printf("Initialised platform between %d and %d\n", station_id, next_station_id);
+        // printf("Initialised platform between %d and %d\n", station_id, next_station_id);
 
         link_occupancies[station_id][next_station_id] = -1;
         link_occupancies[next_station_id][station_id] = -1;
@@ -78,7 +79,7 @@ void print_status(int tick) {
             printf("y%d-", train->id);
             printf("%s", stations[train->current_station_id()].station_name.c_str());
             if(train->status == TRANSIT) {
-                printf("-");
+                printf("->");
                 printf("%s", stations[train->next_station_id()].station_name.c_str());
             }
             cout << " ";
@@ -126,30 +127,27 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     }
 
     // ======== Initialise starting platform of green line ========
-    printf("Initialising green line\n");
     initialise_platforms(green_line);
 
     // ======== Initialise starting platform of blue line ========
-    printf("Initialising blue line\n");
     initialise_platforms(blue_line);
 
     // ======== Initialise starting platform of yellow line ========
-    printf("Initialising yellow line\n");
     initialise_platforms(yellow_line);
 
-    for (unsigned long int i = 0; i < num_stations; i++) {
-        Station station = stations[i];
-        printf("Station %ld has %ld platforms\n", i, station.platforms.size());
-        // for (unsigned long int j = 0; j < station.platforms.size(); j++) {
-        //     Platform platform = *station.platforms[j];
-        //     printf("%d ", platform.destination_station_id);
-        // }
-        for(auto it = station.platforms.cbegin(); it != station.platforms.cend(); ++it)
-        {
-            std::cout << it->first << " ";
-        }
-        printf("\n");
-    }
+    // for (unsigned long int i = 0; i < num_stations; i++) {
+    //     Station station = stations[i];
+    //     printf("Station %ld has %ld platforms\n", i, station.platforms.size());
+    //     // for (unsigned long int j = 0; j < station.platforms.size(); j++) {
+    //     //     Platform platform = *station.platforms[j];
+    //     //     printf("%d ", platform.destination_station_id);
+    //     // }
+    //     for(auto it = station.platforms.cbegin(); it != station.platforms.cend(); ++it)
+    //     {
+    //         std::cout << it->first << " ";
+    //     }
+    //     printf("\n");
+    // }
 
     Train* t;
     for (size_t current_tick = 0; current_tick < ticks; current_tick++) {
@@ -157,14 +155,12 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         // Green
         if (num_green_trains >= 1) {
             t = new Train(train_id_counter, 0, &green_line, true, GREEN);
-            printf("Spawned green train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
             stations[t->current_station_id()].platforms.at(t->next_station_id())->queue(t, current_tick);
             train_id_counter++;
             num_green_trains--;
             trains.push_back(t);
             if (num_green_trains >= 1) {
                 t = new Train(train_id_counter, green_line.size() - 1, &green_line, false, GREEN);
-                printf("Spawned green train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
                 stations[t->current_station_id()].platforms.at(t->next_station_id())->queue(t, current_tick);
                 train_id_counter++;
                 num_green_trains--;
@@ -174,14 +170,12 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         // Yellow
         if (num_yellow_trains >= 1) {
             t = new Train(train_id_counter, 0, &yellow_line, true, YELLOW);
-            printf("Spawned yellow train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
             stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
             train_id_counter++;
             num_yellow_trains--;
             trains.push_back(t);
             if (num_yellow_trains >= 1) {
                 t = new Train(train_id_counter, yellow_line.size() - 1, &yellow_line, false, YELLOW);
-                printf("Spawned yellow train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
                 stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
                 train_id_counter++;
                 num_yellow_trains--;
@@ -191,14 +185,14 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         // Blue
         if (num_blue_trains >= 1) {
             t = new Train(train_id_counter, 0, &blue_line, true, BLUE);
-            printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
+            // printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
             stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
             train_id_counter++;
             num_blue_trains--;
             trains.push_back(t);
             if (num_blue_trains >= 1) {
                 t = new Train(train_id_counter, blue_line.size() - 1, &blue_line, false, BLUE);
-                printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
+                // printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
                 stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
                 train_id_counter++;
                 num_blue_trains--;
@@ -206,25 +200,24 @@ void simulate(size_t num_stations, const vector<string>& station_names,
             }
         }
         // PROGRESS TRANSIT & INSERT INTO QUEUE
+        #pragma omp parallel for
         for (Link link : links) {
-            printf("Processing link %s -> %s\n", stations[link.source].station_name.c_str(), stations[link.destination].station_name.c_str());
+            // printf("Processing link %s -> %s\n", stations[link.source].station_name.c_str(), stations[link.destination].station_name.c_str());
             int link_occupied_by_id = link_occupancies[link.source][link.destination];
             if (link_occupied_by_id >= 0) {
                 Train *train = trains.at(link_occupied_by_id);
-                printf("Train ID: %d\n", train->id);
                 if (train->has_completed(current_tick)) {
                     link_occupancies[link.source][link.destination] = -1; // Set link to unoccupied
-                    printf("Moving to next station\n");
                     train->move_to_next_station(); // Move train into next station
                     train->status = QUEUED; // Change status of the train
-                    printf("Queueing train %d at %s ", train->id, stations[train->current_station_id()].station_name.c_str());
-                    printf("to next station %s\n", stations[train->next_station_id()].station_name.c_str());
+                    // printf("Queueing train %d at %s ", train->id, stations[train->current_station_id()].station_name.c_str());
+                    // printf("to next station %s\n", stations[train->next_station_id()].station_name.c_str());
                     stations[train->current_station_id()].platforms[train->next_station_id()]->queue(train, current_tick); // Queue train into holding area of specified platform
                 }
             }
         }
         // BARRIER SHOULD BE HERE
-        printf("Processing stations\n");
+        #pragma omp parallel for
         for (Station station : stations) {
             for (auto it = station.platforms.begin(); it != station.platforms.end(); it++) {
                 // EMPTY PLATFORMS
@@ -250,7 +243,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         }
 
         // PRINT STATUS OF ALL PLATFORMS
-        print_status(current_tick);
+        if (current_tick >= ticks_to_simulate - num_lines) print_status(current_tick);
     }
 
     // ======== Clean up code ========

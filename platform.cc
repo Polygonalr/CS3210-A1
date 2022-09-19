@@ -13,7 +13,6 @@ TrainTickPair::TrainTickPair(Train* train, size_t entry_tick) : train(train) {
 }
 
 bool TrainCompare::operator()(const TrainTickPair& left_pair, const TrainTickPair& right_pair) {
-    printf("OPERATOR\n");
     if (left_pair.entry_tick != right_pair.entry_tick) {
         return left_pair.entry_tick > right_pair.entry_tick;
     } else {
@@ -37,6 +36,7 @@ Platform::Platform(int popularity, int source_station_id, int destination_statio
 void Platform::queue(Train* train, size_t entry_tick) {
     TrainTickPair ttp(train, entry_tick);
     // CRITICAL
+    #pragma omp critical
     holding_area.push(ttp);
 }
 
