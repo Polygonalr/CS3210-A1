@@ -15,6 +15,7 @@ using adjacency_matrix = vector<std::vector<int>>;
 int train_id_counter = 0;
 int total_stations;
 int ticks_to_simulate;
+vector<int> link_weights;
 vector<Train*> trains;
 vector<Train*> blue_trains;
 vector<Train*> green_trains;
@@ -104,11 +105,17 @@ void simulate(int num_stations, const vector<string>& station_names,
               const vector<string>& blue_station_names, int ticks,
               int num_green_trains, int num_yellow_trains,
               int num_blue_trains, int num_lines) {
-
     // Initialise global variables
     ticks_to_simulate = ticks;
     total_stations = num_stations;
-    link_occupancies = vector<int>(total_stations * total_stations, -2);
+    link_weights = vector<int>(num_stations * num_stations, 0);
+    for (int i = 0; i < num_stations; i++) {
+        for (int j = 0; j < num_stations; j++) {
+            link_weights[index_2d_to_1d(i, j)] = mat[i][j];
+        }
+    }
+
+    link_occupancies = vector<int>(num_stations * num_stations, -2);
 
     // stations.resize(num_stations); // doesn't work due to station name being string (which is dynamically allocated...)
     trains.resize(num_green_trains + num_yellow_trains + num_blue_trains);
@@ -240,7 +247,7 @@ void simulate(int num_stations, const vector<string>& station_names,
                 // it->second here is Platform
                 link_occupancies[index_2d_to_1d(platform->source_station_id, platform->destination_station_id)] = train_id;
                 platform->current_train->status = TRANSIT;
-                platform->current_train->completion_tick = current_tick + mat[platform->source_station_id][platform->destination_station_id];
+                platform->current_train->completion_tick = current_tick + link_weights[index_2d_to_1d(platform->source_station_id, platform->destination_station_id)];
                 platform->current_train = NULL;
                 platform->has_train = false;
             }
