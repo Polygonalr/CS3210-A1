@@ -9,13 +9,12 @@
 
 using namespace std;
 
-using adjacency_matrix = vector<std::vector<size_t>>;
+using adjacency_matrix = vector<std::vector<int>>;
 
 // global variables :D
 int train_id_counter = 0;
 int total_trains;
-size_t global_tick = 0;
-size_t ticks_to_simulate;
+int ticks_to_simulate;
 vector<Train*> trains;
 vector<Train*> blue_trains;
 vector<Train*> green_trains;
@@ -92,39 +91,39 @@ void print_status(int tick) {
     cout << ss.str() << endl;
 }
 
-void simulate(size_t num_stations, const vector<string>& station_names,
-              const std::vector<size_t>& popularities,
+void simulate(int num_stations, const vector<string>& station_names,
+              const std::vector<int>& popularities,
               const adjacency_matrix& mat,
               const vector<string>& green_station_names,
               const vector<string>& yellow_station_names,
-              const vector<string>& blue_station_names, size_t ticks,
-              size_t num_green_trains, size_t num_yellow_trains,
-              size_t num_blue_trains, size_t num_lines) {
+              const vector<string>& blue_station_names, int ticks,
+              int num_green_trains, int num_yellow_trains,
+              int num_blue_trains, int num_lines) {
 
     // Initialise global variables
     ticks_to_simulate = ticks;
     int **link_occupancies = new int*[num_stations];
-    for (size_t i = 0; i < num_stations; i++) {
+    for (int i = 0; i < num_stations; i++) {
         link_occupancies[i] = new int[num_stations] {-2};
     }
     // stations.resize(num_stations); // doesn't work due to station name being string (which is dynamically allocated...)
     trains.resize(num_green_trains + num_yellow_trains + num_blue_trains);
 
     // Initialise train stations, links and platforms
-    for (long unsigned int i = 0; i < station_names.size(); i++) {
+    for (int i = 0; i < (int)station_names.size(); i++) {
         station_name_to_id[station_names[i]] = i;
         string s = station_names[i];
         stations.push_back(Station(i, popularities[i], s, num_stations));
     }
 
     // Convert station names to station ids
-    for (long unsigned int i = 0; i < green_station_names.size(); i++) {
+    for (int i = 0; i < (int)green_station_names.size(); i++) {
         green_line.push_back(station_name_to_id[green_station_names[i]]);
     }
-    for (long unsigned int i = 0; i < yellow_station_names.size(); i++) {
+    for (int i = 0; i < (int)yellow_station_names.size(); i++) {
         yellow_line.push_back(station_name_to_id[yellow_station_names[i]]);
     }
-    for (long unsigned int i = 0; i < blue_station_names.size(); i++) {
+    for (int i = 0; i < (int)blue_station_names.size(); i++) {
         blue_line.push_back(station_name_to_id[blue_station_names[i]]);
     }
 
@@ -152,7 +151,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     // }
 
     Train* t;
-    for (size_t current_tick = 0; current_tick < ticks; current_tick++) {
+    for (int current_tick = 0; current_tick < ticks_to_simulate; current_tick++) {
         // SPAWN TRAIN
         // Green
         if (num_green_trains >= 1) {
@@ -253,16 +252,16 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     }
 
     // ======== Clean up code ========
-    for (unsigned long int j = 0; j < platforms.size(); j++) {
-        delete platforms[j];
+    for (int i = 0; i < (int)platforms.size(); i++) {
+        delete platforms[i];
     }
-    for (size_t i = 0; i < stations.size(); i++) {
+    for (int i = 0; i < (int)stations.size(); i++) {
         free(stations[i].platforms);
     }
-    for (unsigned long int i = 0; i < trains.size(); i++) {
+    for (int i = 0; i < (int)trains.size(); i++) {
         delete trains[i];
     }
-    for (size_t i = 0; i < num_stations; i++) {
+    for (int i = 0; i < num_stations; i++) {
         delete[] link_occupancies[i];
     }
     delete[] link_occupancies;
@@ -295,31 +294,31 @@ int main(int argc, char const* argv[]) {
     }
 
     // Read S
-    size_t S;
+    int S;
     ifs >> S;
 
     // Read station names.
     string station;
     std::vector<string> station_names{};
     station_names.reserve(S);
-    for (size_t i = 0; i < S; ++i) {
+    for (int i = 0; i < S; ++i) {
         ifs >> station;
         station_names.emplace_back(station);
     }
 
     // Read P popularity
-    size_t p;
-    std::vector<size_t> popularities{};
+    int p;
+    std::vector<int> popularities{};
     popularities.reserve(S);
-    for (size_t i = 0; i < S; ++i) {
+    for (int i = 0; i < S; ++i) {
         ifs >> p;
         popularities.emplace_back(p);
     }
 
     // Form adjacency mat
-    adjacency_matrix mat(S, std::vector<size_t>(S));
-    for (size_t src{}; src < S; ++src) {
-        for (size_t dst{}; dst < S; ++dst) {
+    adjacency_matrix mat(S, std::vector<int>(S));
+    for (int src{}; src < S; ++src) {
+        for (int dst{}; dst < S; ++dst) {
             ifs >> mat[src][dst];
         }
     }
@@ -338,16 +337,16 @@ int main(int argc, char const* argv[]) {
     auto blue_station_names = extract_station_names(stations_buf);
 
     // N time ticks
-    size_t N;
+    int N;
     ifs >> N;
 
     // g,y,b number of trains per line
-    size_t g, y, b;
+    int g, y, b;
     ifs >> g;
     ifs >> y;
     ifs >> b;
 
-    size_t num_lines;
+    int num_lines;
     ifs >> num_lines;
 
     simulate(S, station_names, popularities, mat, green_station_names,
