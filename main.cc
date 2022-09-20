@@ -107,6 +107,8 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     for (size_t i = 0; i < num_stations; i++) {
         link_occupancies[i] = new int[num_stations] {-2};
     }
+    // stations.resize(num_stations); // doesn't work due to station name being string (which is dynamically allocated...)
+    trains.resize(num_green_trains + num_yellow_trains + num_blue_trains);
 
     // Initialise train stations, links and platforms
     for (long unsigned int i = 0; i < station_names.size(); i++) {
@@ -156,16 +158,16 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         if (num_green_trains >= 1) {
             t = new Train(train_id_counter, 0, &green_line, true, GREEN);
             stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
+            trains[train_id_counter] = t;
             train_id_counter++;
             num_green_trains--;
-            trains.push_back(t);
             green_trains.push_back(t);
             if (num_green_trains >= 1) {
                 t = new Train(train_id_counter, green_line.size() - 1, &green_line, false, GREEN);
                 stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
+                trains[train_id_counter] = t;
                 train_id_counter++;
                 num_green_trains--;
-                trains.push_back(t);
                 green_trains.push_back(t);
             }
         }
@@ -173,16 +175,16 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         if (num_yellow_trains >= 1) {
             t = new Train(train_id_counter, 0, &yellow_line, true, YELLOW);
             stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
+            trains[train_id_counter] = t;
             train_id_counter++;
             num_yellow_trains--;
-            trains.push_back(t);
             yellow_trains.push_back(t);
             if (num_yellow_trains >= 1) {
                 t = new Train(train_id_counter, yellow_line.size() - 1, &yellow_line, false, YELLOW);
                 stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
+                trains[train_id_counter] = t;
                 train_id_counter++;
                 num_yellow_trains--;
-                trains.push_back(t);
                 yellow_trains.push_back(t);
             }
         }
@@ -191,17 +193,17 @@ void simulate(size_t num_stations, const vector<string>& station_names,
             t = new Train(train_id_counter, 0, &blue_line, true, BLUE);
             // printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
             stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
+            trains[train_id_counter] = t;
             train_id_counter++;
             num_blue_trains--;
-            trains.push_back(t);
             blue_trains.push_back(t);
             if (num_blue_trains >= 1) {
                 t = new Train(train_id_counter, blue_line.size() - 1, &blue_line, false, BLUE);
                 // printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
                 stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
+                trains[train_id_counter] = t;
                 train_id_counter++;
                 num_blue_trains--;
-                trains.push_back(t);
                 blue_trains.push_back(t);
             }
         }
