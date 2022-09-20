@@ -3,22 +3,28 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <cstring>
 #include <vector>
 #include <map>
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
 
 using adjacency_matrix = vector<std::vector<int>>;
+
+// sorts integers lexigraphically
+bool lexi_compare (int lhs, int rhs) {
+    return strcmp(to_string(lhs).c_str(), to_string(rhs).c_str()) < 0;
+}
 
 // global variables :D
 int train_id_counter = 0;
 int total_trains;
 int ticks_to_simulate;
 vector<Train*> trains;
-vector<Train*> blue_trains;
-vector<Train*> green_trains;
-vector<Train*> yellow_trains;
+vector<int> blue_trains_indexes, green_trains_indexes, yellow_trains_indexes;
+bool blue_sorted = false, green_sorted = false, yellow_sorted = false;
 vector<Station> stations;
 vector<Platform*> platforms;
 map<string, int> station_name_to_id;
@@ -58,30 +64,60 @@ void print_status(int tick) {
     {
         #pragma omp section
         {
-            for (auto train : blue_trains) {
-                blue_ss << "b" << train->id << "-" << stations[train->current_station_id()].station_name.c_str();
-                if(train->status == TRANSIT) {
-                    blue_ss << "->" << stations[train->next_station_id()].station_name.c_str();
+            // Sort print orders if not sorted
+            if (!blue_sorted) {
+                sort(blue_trains_indexes.begin(), blue_trains_indexes.end(), lexi_compare);
+                blue_sorted = true;
+            }
+            for (int b = 0; b < (int)blue_trains_indexes.size(); b++) {
+                int train_id = blue_trains_indexes[b];
+                blue_ss << "b" << trains[train_id]->id << "-" << stations[trains[train_id]->current_station_id()].station_name.c_str();
+                if(trains[train_id]->status == TRANSIT) {
+                    blue_ss << "->" << stations[trains[train_id]->next_station_id()].station_name.c_str();
+                } else if (trains[train_id]->status == PLATFORM || trains[train_id]->status == DEPARTING) {
+                    blue_ss << "%";
+                } else {
+                    blue_ss << "#";
                 }
                 blue_ss << " ";
             }
         }
         #pragma omp section
         {
-            for (auto train : green_trains) {
-                green_ss << "g" << train->id << "-" << stations[train->current_station_id()].station_name.c_str();
-                if(train->status == TRANSIT) {
-                    green_ss << "->" << stations[train->next_station_id()].station_name.c_str();
+            // Sort print orders if not sorted
+            if (!green_sorted) {
+                sort(green_trains_indexes.begin(), green_trains_indexes.end(), lexi_compare);
+                green_sorted = true;
+            }
+            for (int g = 0; g < (int)green_trains_indexes.size(); g++) {
+                int train_id = green_trains_indexes[g];
+                green_ss << "g" << trains[train_id]->id << "-" << stations[trains[train_id]->current_station_id()].station_name.c_str();
+                if(trains[train_id]->status == TRANSIT) {
+                    green_ss << "->" << stations[trains[train_id]->next_station_id()].station_name.c_str();
+                } else if (trains[train_id]->status == PLATFORM || trains[train_id]->status == DEPARTING) {
+                    green_ss << "%";
+                } else {
+                    green_ss << "#";
                 }
                 green_ss << " ";
             }
         }
         #pragma omp section
         {
-            for (auto train : yellow_trains) {
-                yellow_ss << "y" << train->id << "-" << stations[train->current_station_id()].station_name.c_str();
-                if(train->status == TRANSIT) {
-                    yellow_ss << "->" << stations[train->next_station_id()].station_name.c_str();
+            // Sort print orders if not sorted
+            if (!yellow_sorted) {
+                sort(yellow_trains_indexes.begin(), yellow_trains_indexes.end(), lexi_compare);
+                yellow_sorted = true;
+            }
+            for (int y = 0; y < (int)yellow_trains_indexes.size(); y++) {
+                int train_id = yellow_trains_indexes[y];
+                yellow_ss << "y" << trains[train_id]->id << "-" << stations[trains[train_id]->current_station_id()].station_name.c_str();
+                if(trains[train_id]->status == TRANSIT) {
+                    yellow_ss << "->" << stations[trains[train_id]->next_station_id()].station_name.c_str();
+                } else if (trains[train_id]->status == PLATFORM || trains[train_id]->status == DEPARTING) {
+                    yellow_ss << "%";
+                } else {
+                    yellow_ss << "#";
                 }
                 yellow_ss << " ";
             }
@@ -158,16 +194,18 @@ void simulate(int num_stations, const vector<string>& station_names,
             t = new Train(train_id_counter, 0, &green_line, true, GREEN);
             stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
             trains[train_id_counter] = t;
+            green_trains_indexes.push_back(train_id_counter);
+            green_sorted = false;
             train_id_counter++;
             num_green_trains--;
-            green_trains.push_back(t);
             if (num_green_trains >= 1) {
                 t = new Train(train_id_counter, green_line.size() - 1, &green_line, false, GREEN);
                 stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
                 trains[train_id_counter] = t;
+                green_trains_indexes.push_back(train_id_counter);
+                green_sorted = false;
                 train_id_counter++;
                 num_green_trains--;
-                green_trains.push_back(t);
             }
         }
         // Yellow
@@ -175,16 +213,18 @@ void simulate(int num_stations, const vector<string>& station_names,
             t = new Train(train_id_counter, 0, &yellow_line, true, YELLOW);
             stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
             trains[train_id_counter] = t;
+            yellow_trains_indexes.push_back(train_id_counter);
+            yellow_sorted = false;
             train_id_counter++;
             num_yellow_trains--;
-            yellow_trains.push_back(t);
             if (num_yellow_trains >= 1) {
                 t = new Train(train_id_counter, yellow_line.size() - 1, &yellow_line, false, YELLOW);
                 stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
                 trains[train_id_counter] = t;
+                yellow_trains_indexes.push_back(train_id_counter);
+                yellow_sorted = false;
                 train_id_counter++;
                 num_yellow_trains--;
-                yellow_trains.push_back(t);
             }
         }
         // Blue
@@ -193,19 +233,22 @@ void simulate(int num_stations, const vector<string>& station_names,
             // printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
             stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
             trains[train_id_counter] = t;
+            blue_trains_indexes.push_back(train_id_counter);
+            blue_sorted = false;
             train_id_counter++;
             num_blue_trains--;
-            blue_trains.push_back(t);
             if (num_blue_trains >= 1) {
                 t = new Train(train_id_counter, blue_line.size() - 1, &blue_line, false, BLUE);
                 // printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
                 stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
                 trains[train_id_counter] = t;
+                blue_trains_indexes.push_back(train_id_counter);
+                blue_sorted = false;
                 train_id_counter++;
                 num_blue_trains--;
-                blue_trains.push_back(t);
             }
         }
+
         // PROGRESS TRANSIT & INSERT INTO QUEUE
         #pragma omp parallel for
         for (Link link : links) {
