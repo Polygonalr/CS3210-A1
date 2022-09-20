@@ -36,6 +36,7 @@ public:
     int destination_station_id;
     Train* current_train;
     bool has_train;
+    int trains_in_queue;
 
     Platform(int popularity, int source_station_id, int destination_station_id);
 

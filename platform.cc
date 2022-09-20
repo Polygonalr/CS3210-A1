@@ -31,6 +31,7 @@ Platform::Platform(int popularity, int source_station_id, int destination_statio
     this->destination_station_id = destination_station_id;
     this->current_train = NULL;
     this->has_train = false;
+    this->trains_in_queue = 0;
 }
 
 void Platform::queue(Train* train, size_t entry_tick) {
@@ -38,16 +39,18 @@ void Platform::queue(Train* train, size_t entry_tick) {
     // CRITICAL
     #pragma omp critical
     {
+        this->trains_in_queue++;
         holding_area.push(ttp);
     }
 }
 
 void Platform::dequeue(size_t current_tick) {
-    if (holding_area.empty()) {
+    if (this->trains_in_queue == 0) {
         return;
     }
     Train* train = holding_area.top().train;
     holding_area.pop();
+    this->trains_in_queue--;
     train->status = PLATFORM;
     train->completion_tick = current_tick + this->popularity + 1;
     this->current_train = train;
