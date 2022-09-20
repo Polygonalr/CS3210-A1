@@ -21,6 +21,7 @@ vector<Train*> blue_trains;
 vector<Train*> green_trains;
 vector<Train*> yellow_trains;
 vector<Station> stations;
+vector<Platform*> platforms;
 map<string, int> station_name_to_id;
 vector<int> green_line;
 vector<int> yellow_line;
@@ -40,6 +41,8 @@ void initialise_platforms(vector<int>& line, int** link_occupancies) {
 
         station->platforms[next_station_id] = new Platform(station->popularity, station_id, next_station_id);
         next_station->platforms[station_id] = new Platform(next_station->popularity, next_station_id, station_id);
+        platforms.push_back(station->platforms[next_station_id]);
+        platforms.push_back(next_station->platforms[station_id]);
         // printf("Initialised platform between %d and %d\n", station_id, next_station_id);
 
         link_occupancies[station_id][next_station_id] = -1;
@@ -116,7 +119,7 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     for (long unsigned int i = 0; i < station_names.size(); i++) {
         station_name_to_id[station_names[i]] = i;
         string s = station_names[i];
-        stations.push_back(Station(i, popularities[i], s));
+        stations.push_back(Station(i, popularities[i], s, num_stations));
     }
 
     // Convert station names to station ids
@@ -159,14 +162,14 @@ void simulate(size_t num_stations, const vector<string>& station_names,
         // Green
         if (num_green_trains >= 1) {
             t = new Train(train_id_counter, 0, &green_line, true, GREEN);
-            stations[t->current_station_id()].platforms.at(t->next_station_id())->queue(t, current_tick);
+            stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
             train_id_counter++;
             num_green_trains--;
             trains.push_back(t);
             green_trains.push_back(t);
             if (num_green_trains >= 1) {
                 t = new Train(train_id_counter, green_line.size() - 1, &green_line, false, GREEN);
-                stations[t->current_station_id()].platforms.at(t->next_station_id())->queue(t, current_tick);
+                stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
                 train_id_counter++;
                 num_green_trains--;
                 trains.push_back(t);
@@ -226,29 +229,27 @@ void simulate(size_t num_stations, const vector<string>& station_names,
                 }
             }
         }
-        // BARRIER SHOULD BE HERE
-        #pragma omp parallel for
-        for (Station station : stations) {
-            for (auto it = station.platforms.begin(); it != station.platforms.end(); it++) {
-                // EMPTY PLATFORMS
-                if (link_occupancies[it->second->source_station_id][it->second->destination_station_id] != -1) {
-                    continue;
-                }
-                int train_id = it->second->empty_platform(current_tick);
-                if (train_id != -1) {
-                    // Platform is emptied, push train to link
-                    // it->second here is Platform
-                    link_occupancies[it->second->source_station_id][it->second->destination_station_id] = train_id;
-                    it->second->current_train->status = TRANSIT;
-                    it->second->current_train->completion_tick = current_tick + mat[it->second->source_station_id][it->second->destination_station_id];
-                    it->second->current_train = NULL;
-                    it->second->has_train = false;
-                }
 
-                // DEQUEUE & OPEN DOOR
-                if (it->second->current_train == NULL) {
-                    it->second->dequeue(current_tick);
-                }
+        #pragma omp parallel for
+        for (Platform *platform : platforms) {
+            // EMPTY PLATFORMS
+            if (link_occupancies[platform->source_station_id][platform->destination_station_id] != -1) {
+                continue;
+            }
+            int train_id = platform->empty_platform(current_tick);
+            if (train_id != -1) {
+                // Platform is emptied, push train to link
+                // it->second here is Platform
+                link_occupancies[platform->source_station_id][platform->destination_station_id] = train_id;
+                platform->current_train->status = TRANSIT;
+                platform->current_train->completion_tick = current_tick + mat[platform->source_station_id][platform->destination_station_id];
+                platform->current_train = NULL;
+                platform->has_train = false;
+            }
+
+            // DEQUEUE & OPEN DOOR
+            if (platform->current_train == NULL) {
+                platform->dequeue(current_tick);
             }
         }
 
@@ -257,14 +258,19 @@ void simulate(size_t num_stations, const vector<string>& station_names,
     }
 
     // ======== Clean up code ========
-    for (unsigned long int i = 0; i < num_stations; i++) {
-        for (unsigned long int j = 0; j < stations[i].platforms.size(); j++) {
-            delete stations[i].platforms[j];
-        }
+    for (unsigned long int j = 0; j < platforms.size(); j++) {
+        delete platforms[j];
+    }
+    for (size_t i = 0; i < stations.size(); i++) {
+        free(stations[i].platforms);
     }
     for (unsigned long int i = 0; i < trains.size(); i++) {
         delete trains[i];
     }
+    for (size_t i = 0; i < num_stations; i++) {
+        delete[] link_occupancies[i];
+    }
+    delete[] link_occupancies;
 }
 
 vector<string> extract_station_names(string& line) {

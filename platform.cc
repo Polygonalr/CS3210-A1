@@ -73,8 +73,9 @@ int Platform::empty_platform(size_t current_tick) {
     return -1;
 }
 
-Station::Station(int id, int popularity, string& station_name) {
+Station::Station(int id, int popularity, string& station_name, int num_stations) {
     this->id = id;
     this->popularity = popularity;
     this->station_name = station_name;
+    this->platforms = (Platform**)malloc(sizeof(Platform*) * num_stations);
 }

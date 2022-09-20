@@ -3,12 +3,10 @@
 #include <string>
 #include <vector>
 #include <queue>
-#include <map>
 
 using std::string;
 using std::vector;
 using std::priority_queue;
-using std::map;
 
 class TrainTickPair {
 public:
@@ -52,8 +50,8 @@ public:
     int id;
     int popularity;
     string station_name;
-    map<int, Platform*> platforms;
+    Platform** platforms;
 
-    Station(int id, int popularity, string& station_name);
+    Station(int id, int popularity, string& station_name, int num_stations);
     void goto_next_tick();
 };
