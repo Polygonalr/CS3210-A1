@@ -31,6 +31,10 @@
 *.out
 *.app
 troons
+troonsseq
 
 # VSCode
 .vscode
+
+# flamegraphs
+*.svg
