@@ -13,7 +13,7 @@ using adjacency_matrix = vector<std::vector<int>>;
 
 // global variables :D
 int train_id_counter = 0;
-int total_trains;
+int total_stations;
 int ticks_to_simulate;
 vector<Train*> trains;
 vector<Train*> blue_trains;
@@ -25,16 +25,21 @@ map<string, int> station_name_to_id;
 vector<int> green_line;
 vector<int> yellow_line;
 vector<int> blue_line;
+vector<int> link_occupancies;
 vector<Link> links;
 
-void initialise_platforms(vector<int>& line, int** link_occupancies) {
+int index_2d_to_1d(int row, int col) {
+    return (total_stations * row) + col;
+}
+
+void initialise_platforms(vector<int>& line) {
     for (unsigned long int i = 0; i < line.size() - 1; i++) {
         int station_id = line[i];
         int next_station_id = line[i + 1];
         Station *station = &stations[station_id];
         Station *next_station = &stations[next_station_id];
 
-        if (link_occupancies[station_id][next_station_id] == -1) {
+        if (link_occupancies[index_2d_to_1d(station_id, next_station_id)] == -1) {
             continue;
         }
 
@@ -44,8 +49,8 @@ void initialise_platforms(vector<int>& line, int** link_occupancies) {
         platforms.push_back(next_station->platforms[station_id]);
         // printf("Initialised platform between %d and %d\n", station_id, next_station_id);
 
-        link_occupancies[station_id][next_station_id] = -1;
-        link_occupancies[next_station_id][station_id] = -1;
+        link_occupancies[index_2d_to_1d(station_id, next_station_id)] = -1;
+        link_occupancies[index_2d_to_1d(next_station_id, station_id)] = -1;
         links.push_back(Link(station_id, next_station_id));
         links.push_back(Link(next_station_id, station_id));
     }
@@ -102,10 +107,9 @@ void simulate(int num_stations, const vector<string>& station_names,
 
     // Initialise global variables
     ticks_to_simulate = ticks;
-    int **link_occupancies = new int*[num_stations];
-    for (int i = 0; i < num_stations; i++) {
-        link_occupancies[i] = new int[num_stations] {-2};
-    }
+    total_stations = num_stations;
+    link_occupancies = vector<int>(total_stations * total_stations, -2);
+
     // stations.resize(num_stations); // doesn't work due to station name being string (which is dynamically allocated...)
     trains.resize(num_green_trains + num_yellow_trains + num_blue_trains);
 
@@ -128,13 +132,13 @@ void simulate(int num_stations, const vector<string>& station_names,
     }
 
     // ======== Initialise starting platform of green line ========
-    initialise_platforms(green_line, link_occupancies);
+    initialise_platforms(green_line);
 
     // ======== Initialise starting platform of blue line ========
-    initialise_platforms(blue_line, link_occupancies);
+    initialise_platforms(blue_line);
 
     // ======== Initialise starting platform of yellow line ========
-    initialise_platforms(yellow_line, link_occupancies);
+    initialise_platforms(yellow_line);
 
     // for (unsigned long int i = 0; i < num_stations; i++) {
     //     Station station = stations[i];
@@ -210,11 +214,11 @@ void simulate(int num_stations, const vector<string>& station_names,
         #pragma omp parallel for
         for (Link link : links) {
             // printf("Processing link %s -> %s\n", stations[link.source].station_name.c_str(), stations[link.destination].station_name.c_str());
-            int link_occupied_by_id = link_occupancies[link.source][link.destination];
+            int link_occupied_by_id = link_occupancies[index_2d_to_1d(link.source, link.destination)];
             if (link_occupied_by_id >= 0) {
                 Train *train = trains.at(link_occupied_by_id);
                 if (train->has_completed(current_tick)) {
-                    link_occupancies[link.source][link.destination] = -1; // Set link to unoccupied
+                    link_occupancies[index_2d_to_1d(link.source, link.destination)] = -1; // Set link to unoccupied
                     train->move_to_next_station(); // Move train into next station
                     train->status = QUEUED; // Change status of the train
                     // printf("Queueing train %d at %s ", train->id, stations[train->current_station_id()].station_name.c_str());
@@ -227,14 +231,14 @@ void simulate(int num_stations, const vector<string>& station_names,
         #pragma omp parallel for
         for (Platform *platform : platforms) {
             // EMPTY PLATFORMS
-            if (link_occupancies[platform->source_station_id][platform->destination_station_id] != -1) {
+            if (link_occupancies[index_2d_to_1d(platform->source_station_id, platform->destination_station_id)] != -1) {
                 continue;
             }
             int train_id = platform->empty_platform(current_tick);
             if (train_id != -1) {
                 // Platform is emptied, push train to link
                 // it->second here is Platform
-                link_occupancies[platform->source_station_id][platform->destination_station_id] = train_id;
+                link_occupancies[index_2d_to_1d(platform->source_station_id, platform->destination_station_id)] = train_id;
                 platform->current_train->status = TRANSIT;
                 platform->current_train->completion_tick = current_tick + mat[platform->source_station_id][platform->destination_station_id];
                 platform->current_train = NULL;
@@ -261,10 +265,6 @@ void simulate(int num_stations, const vector<string>& station_names,
     for (int i = 0; i < (int)trains.size(); i++) {
         delete trains[i];
     }
-    for (int i = 0; i < num_stations; i++) {
-        delete[] link_occupancies[i];
-    }
-    delete[] link_occupancies;
 }
 
 vector<string> extract_station_names(string& line) {
