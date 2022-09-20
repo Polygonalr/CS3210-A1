@@ -82,7 +82,7 @@ void print_status(int tick) {
                     blue_ss << "->" << stations[trains[train_id]->next_station_id()].station_name.c_str();
                 } else if (trains[train_id]->status == PLATFORM || trains[train_id]->status == DEPARTING) {
                     blue_ss << "%";
-                } else {
+                } else if (trains[train_id]->status == QUEUED) {
                     blue_ss << "#";
                 }
                 blue_ss << " ";
@@ -102,7 +102,7 @@ void print_status(int tick) {
                     green_ss << "->" << stations[trains[train_id]->next_station_id()].station_name.c_str();
                 } else if (trains[train_id]->status == PLATFORM || trains[train_id]->status == DEPARTING) {
                     green_ss << "%";
-                } else {
+                } else if (trains[train_id]->status == QUEUED) {
                     green_ss << "#";
                 }
                 green_ss << " ";
@@ -122,7 +122,7 @@ void print_status(int tick) {
                     yellow_ss << "->" << stations[trains[train_id]->next_station_id()].station_name.c_str();
                 } else if (trains[train_id]->status == PLATFORM || trains[train_id]->status == DEPARTING) {
                     yellow_ss << "%";
-                } else {
+                } else if (trains[train_id]->status == QUEUED) {
                     yellow_ss << "#";
                 }
                 yellow_ss << " ";
@@ -281,18 +281,17 @@ void simulate(int num_stations, const vector<string>& station_names,
         #pragma omp parallel for
         for (Platform *platform : platforms) {
             // EMPTY PLATFORMS
-            if (link_occupancies[index_2d_to_1d(platform->source_station_id, platform->destination_station_id)] != -1) {
-                continue;
-            }
-            int train_id = platform->empty_platform(current_tick);
-            if (train_id != -1) {
-                // Platform is emptied, push train to link
-                // it->second here is Platform
-                link_occupancies[index_2d_to_1d(platform->source_station_id, platform->destination_station_id)] = train_id;
-                platform->current_train->status = TRANSIT;
-                platform->current_train->completion_tick = current_tick + link_weights[index_2d_to_1d(platform->source_station_id, platform->destination_station_id)];
-                platform->current_train = NULL;
-                platform->has_train = false;
+            if (link_occupancies[index_2d_to_1d(platform->source_station_id, platform->destination_station_id)] == -1) {
+                int train_id = platform->empty_platform(current_tick);
+                if (train_id != -1) {
+                    // Platform is emptied, push train to link
+                    // it->second here is Platform
+                    link_occupancies[index_2d_to_1d(platform->source_station_id, platform->destination_station_id)] = train_id;
+                    platform->current_train->status = TRANSIT;
+                    platform->current_train->completion_tick = current_tick + link_weights[index_2d_to_1d(platform->source_station_id, platform->destination_station_id)];
+                    platform->current_train = NULL;
+                    platform->has_train = false;
+                }
             }
 
             // DEQUEUE & OPEN DOOR
