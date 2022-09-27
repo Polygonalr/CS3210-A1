@@ -1,4 +1,5 @@
 #include "train.h"
+#include "traintickpair.h"
 
 #include <string>
 #include <vector>
@@ -8,26 +9,8 @@ using std::string;
 using std::vector;
 using std::priority_queue;
 
-class TrainTickPair {
-public:
-    Train* train;
-    size_t entry_tick;
-
-    TrainTickPair(Train* train, size_t entry_tick);
-};
-
-struct TrainCompare {
-    bool operator()(const TrainTickPair& left_pair, const TrainTickPair& right_pair);
-};
-
-class Link {
-public:
-    int source;
-    int destination;
-
-    Link(int source, int destination);
-};
-
+#ifndef PLATFORM_H
+#define PLATFORM_H
 class Platform {
 public:
     int popularity;
@@ -45,14 +28,4 @@ public:
     bool has_completed(size_t current_tick);
     int empty_platform(size_t current_tick);
 };
-
-class Station {
-public:
-    int id;
-    int popularity;
-    string station_name;
-    Platform** platforms;
-
-    Station(int id, int popularity, string& station_name, int num_stations);
-    void goto_next_tick();
-};
+#endif

@@ -22,11 +22,11 @@ typedef enum TrainStatus {
 class Train {
 public:
     int id;
-    vector<int>* line;
+    vector<int>* line; // pointer to the vector containing the station ids of the line which the train is on
     long unsigned int position; // 0 is at the start, line.size()-1 means at the end
     LineColour colour;
     bool forward;
-    size_t completion_tick;
+    size_t completion_tick; // tick which the train will complete its current action
     TrainStatus status;
 
     Train(int id, long unsigned int position, vector<int>* line, bool forward, LineColour colour);

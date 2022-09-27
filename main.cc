@@ -1,4 +1,7 @@
 #include "platform.h"
+#include "traintickpair.h"
+#include "station.h"
+#include "link.h"
 
 #include <fstream>
 #include <iostream>
