@@ -1,3 +1,5 @@
+#include "traintickpair.h"
+
 TrainTickPair::TrainTickPair(Train* train, size_t entry_tick) : train(train) {
     this->entry_tick = entry_tick;
 }

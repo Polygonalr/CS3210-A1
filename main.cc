@@ -35,9 +35,17 @@ map<string, int> station_name_to_id;
 vector<int> green_line;
 vector<int> yellow_line;
 vector<int> blue_line;
+
+// 2d vector declared as a 1d vector for optimisation
+// tracks the current status of a link between two stations
+// link_occupancies[source][destination] = 
+// * -2 means unintialised
+// * -1 means unoccupied
+// * >=0 means occupied by train with id = link_occupancies[source][destination]
 vector<int> link_occupancies;
 vector<Link> links;
 
+// this function converts the 2d index to a 1d index for the link_occupancies vector
 int index_2d_to_1d(int row, int col) {
     return (total_stations * row) + col;
 }
@@ -186,20 +194,6 @@ void simulate(int num_stations, const vector<string>& station_names,
     // ======== Initialise starting platform of yellow line ========
     initialise_platforms(yellow_line);
 
-    // for (unsigned long int i = 0; i < num_stations; i++) {
-    //     Station station = stations[i];
-    //     printf("Station %ld has %ld platforms\n", i, station.platforms.size());
-    //     // for (unsigned long int j = 0; j < station.platforms.size(); j++) {
-    //     //     Platform platform = *station.platforms[j];
-    //     //     printf("%d ", platform.destination_station_id);
-    //     // }
-    //     for(auto it = station.platforms.cbegin(); it != station.platforms.cend(); ++it)
-    //     {
-    //         std::cout << it->first << " ";
-    //     }
-    //     printf("\n");
-    // }
-
     Train* t;
     for (int current_tick = 0; current_tick < ticks_to_simulate; current_tick++) {
         // SPAWN TRAIN
@@ -244,7 +238,6 @@ void simulate(int num_stations, const vector<string>& station_names,
         // Blue
         if (num_blue_trains >= 1) {
             t = new Train(train_id_counter, 0, &blue_line, true, BLUE);
-            // printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
             stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
             trains[train_id_counter] = t;
             blue_trains_indexes.push_back(train_id_counter);
@@ -253,7 +246,6 @@ void simulate(int num_stations, const vector<string>& station_names,
             num_blue_trains--;
             if (num_blue_trains >= 1) {
                 t = new Train(train_id_counter, blue_line.size() - 1, &blue_line, false, BLUE);
-                // printf("Spawned blue train at %d and queued it to next station %d\n", t->current_station_id(), t->next_station_id());
                 stations[t->current_station_id()].platforms[t->next_station_id()]->queue(t, current_tick);
                 trains[train_id_counter] = t;
                 blue_trains_indexes.push_back(train_id_counter);
@@ -266,7 +258,6 @@ void simulate(int num_stations, const vector<string>& station_names,
         // PROGRESS TRANSIT & INSERT INTO QUEUE
         #pragma omp parallel for
         for (Link link : links) {
-            // printf("Processing link %s -> %s\n", stations[link.source].station_name.c_str(), stations[link.destination].station_name.c_str());
             int link_occupied_by_id = link_occupancies[index_2d_to_1d(link.source, link.destination)];
             if (link_occupied_by_id >= 0) {
                 Train *train = trains.at(link_occupied_by_id);
@@ -274,13 +265,12 @@ void simulate(int num_stations, const vector<string>& station_names,
                     link_occupancies[index_2d_to_1d(link.source, link.destination)] = -1; // Set link to unoccupied
                     train->move_to_next_station(); // Move train into next station
                     train->status = QUEUED; // Change status of the train
-                    // printf("Queueing train %d at %s ", train->id, stations[train->current_station_id()].station_name.c_str());
-                    // printf("to next station %s\n", stations[train->next_station_id()].station_name.c_str());
                     stations[train->current_station_id()].platforms[train->next_station_id()]->queue(train, current_tick); // Queue train into holding area of specified platform
                 }
             }
         }
 
+        // PROCESS PLATFORMS AND WAITING AREA QUEUES
         #pragma omp parallel for
         for (Platform *platform : platforms) {
             // EMPTY PLATFORMS

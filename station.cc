@@ -1,4 +1,5 @@
 #include "platform.h"
+#include "station.h"
 
 Station::Station(int id, int popularity, string& station_name, int num_stations) {
     this->id = id;
